@@ -1,0 +1,31 @@
+#!/bin/bash
+path=/usr/local/nginx/conf/nginx.conf
+pass=$(yum repolist | awk '/repolist/{print $2}')
+if [ "$pass"  -eq  "0" ];then
+echo "获取软件包失败"
+exit 1
+fi
+cd /lnmp_soft
+tar xf /lnmp_soft/nginx-1.12.2.tar.gz
+cd nginx-1.12.2
+yum -y install gcc pcre-devel openssl-devel
+./configure --with-http_ssl_module --with-stream --with-http_stub_status_module
+make && make install
+/usr/local/nginx/sbin/nginx
+ss -ntulp | grep nginx
+if [ $? -eq 0 ];then
+echo "nginx启动成功"
+else
+echo "nginx启动失败"
+exit 2
+fi
+ echo "/usr/local/nginx/sbin/nginx" >> /etc/rc.local
+chmod +x /etc/rc.local && echo "nginx成功加入开启启动"
+yum -y install mariadb mariadb-server mariadb-devel
+yum -y install php php-fpm php-mysql
+sed -i '65,72s/#//' $path
+sed -i '/SCRIPT_FILENAME/d'  $path
+sed -i 's/fastcgi_params/fastcgi.conf/'  $path
+systemctl start php-fpm
+systemctl start mariadb
+echo "lnmp 搭建成功"
